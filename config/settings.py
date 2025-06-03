@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-fs@y7@njoofszo+c4^+9m$k_7wo-l0yekdwhymzu*)utt7am@u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'sondaggiapi-production.up.railway.app',
+
+]
 
 
 # Application definition
