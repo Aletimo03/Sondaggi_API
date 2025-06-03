@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Register - PollsApp</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container mt-5" style="max-width: 400px;">
+    <h2>Register</h2>
+    <form id="registerForm">
+      <div class="mb-3">
+        <input name="username" class="form-control" placeholder="Username" required />
+      </div>
+      <div class="mb-3">
+        <input name="email" type="email" class="form-control" placeholder="Email" required />
+      </div>
+      <div class="mb-3">
+        <input name="password" type="password" class="form-control" placeholder="Password" required />
+      </div>
+      <div class="mb-3">
+        <input name="password2" type="password" class="form-control" placeholder="Confirm Password" required />
+      </div>
+      <button type="submit" class="btn btn-primary">Register</button>
+      <div id="error-msg" class="text-danger mt-3" style="display:none;"></div>
+    </form>
+    <p class="mt-3">Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+  <script type="module">
+    import { api } from './js/api.js';
+
+    const form = document.getElementById('registerForm');
+    const errorMsg = document.getElementById('error-msg');
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      errorMsg.style.display = 'none';
+
+      const data = {
+        username: form.username.value.trim(),
+        email: form.email.value.trim(),
+        password: form.password.value,
+        password2: form.password2.value,
+      };
+
+      try {
+        await api.post('/users/register/', data);
+        alert("Registered successfully!");
+        window.location.href = 'login.html';
+      } catch (err) {
+        errorMsg.textContent = err.message || 'Registration failed.';
+        errorMsg.style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>

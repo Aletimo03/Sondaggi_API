@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Create New Poll - PollsApp</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+ <!-- Remove this line or comment it out -->
+<!-- <script defer type="module" src="./js/create_poll.js"></script> -->
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">PollsApp</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="create_poll.html">New Poll</a></li>
+          <li class="nav-item"><a id="login-link" class="nav-link" href="login.html">Login</a></li>
+          <li class="nav-item"><a id="logout-link" class="nav-link" href="#" style="display:none;">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4" style="max-width: 600px;">
+    <h2>Create a New Poll</h2>
+    <form id="poll-form">
+      <div class="mb-3">
+        <label for="title" class="form-label">Poll Title</label>
+        <input type="text" id="title" name="title" class="form-control" required />
+      </div>
+      <div class="mb-3" id="choices-container">
+        <label class="form-label">Choices</label>
+        <input type="text" name="choices" class="form-control mb-2 choice-input" placeholder="Choice 1" required />
+        <input type="text" name="choices" class="form-control mb-2 choice-input" placeholder="Choice 2" required />
+      </div>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+      <button type="button" id="add-choice" class="btn btn-secondary">Add Another Choice</button>
+      <button type="submit" class="btn btn-primary">Create Poll</button>
+     </div>
+     <div id="error-msg" class="text-danger mb-3" style="display:none;"></div>
+
+    </form>
+  </div>
+
+   <script type="module">
+   import { api } from './js/api.js';
+   import { isAuthenticated, logout } from './js/auth.js';
+
+   const loginLink = document.getElementById('login-link');
+   const logoutLink = document.getElementById('logout-link');
+
+   if (isAuthenticated()) {
+    loginLink.style.display = 'none';
+    logoutLink.style.display = 'inline-block';
+   }
+
+   logoutLink.addEventListener('click', () => {
+    logout();
+    window.location.href = 'login.html';
+   });
+
+   const form = document.getElementById('poll-form');
+   const choicesContainer = document.getElementById('choices-container');
+   const addChoiceBtn = document.getElementById('add-choice');
+   const errorMsg = document.getElementById('error-msg');
+
+   addChoiceBtn.addEventListener('click', () => {
+     const numChoices = choicesContainer.querySelectorAll('.choice-input').length + 1;
+     const input = document.createElement('input');
+     input.type = 'text';
+     input.name = 'choices';
+     input.className = 'form-control mb-2 choice-input';
+     input.placeholder = `Choice ${numChoices}`;
+     input.required = true;
+     choicesContainer.appendChild(input);
+   });
+
+   form.addEventListener('submit', async (e) => {
+     e.preventDefault();
+     errorMsg.style.display = 'none';
+
+     if (!isAuthenticated()) {
+       window.location.href = 'login.html';
+       return;
+     }
+
+     const title = form.title.value.trim();
+     const choices = Array.from(form.querySelectorAll('input[name="choices"]'))
+       .map(input => input.value.trim())
+       .filter(val => val.length > 0);
+
+     if (choices.length < 2) {
+       errorMsg.textContent = 'Please enter at least two choices.';
+       errorMsg.style.display = 'block';
+       return;
+     }
+
+     try {
+       // Step 1: Create poll
+       const poll = await api.post('/polls/', { title });
+
+       // Step 2: Add each choice
+       for (const text of choices) {
+         await api.post(`/polls/${poll.id}/choices/`, { text });
+       }
+
+       // Redirect to home
+       window.location.href = 'index.html';
+     } catch (err) {
+       errorMsg.textContent = err.message || 'Failed to create poll.';
+       errorMsg.style.display = 'block';
+     }
+   });
+ </script>
+</body>
+</html>
