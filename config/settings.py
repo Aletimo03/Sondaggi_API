@@ -29,7 +29,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'sondaggiapi-production.up.railway.app',
-
+    'peaceful-vision-production.up.railway.app',  # Add this
 ]
 
 
@@ -152,5 +152,6 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://sondaggiapi-production.up.railway.app",
+    "https://peaceful-vision-production.up.railway.app", # Add this
 ]
 
