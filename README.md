@@ -1,8 +1,33 @@
 # 🗳️ Sondaggi - Full-Stack Polling App
 
-Sondaggi is a full-stack web application where users can register, log in, create polls, vote on them, and view results in real time. It features user authentication via JWT tokens, poll management, and a clean, responsive frontend.
+ Sondaggi is a full-stack web application where users can register, log in, create polls, vote on them, and view results in real time. It features user authentication via JWT tokens, poll management, and a clean, responsive frontend.
 
 ---
+
+
+## User Roles & Permissions
+
+- Django Superuser ( just one at the moment )
+  - Username: superuser1 
+  - Password: superuser1
+
+  - Can view, vote on, edit, and delete all polls (their own and others).
+
+
+-  Authenticated Users   
+   - Can view polls, vote, and edit/delete only their own polls.
+
+- Unauthenticated Users
+
+    - Can only view poll results but cannot vote or modify polls.
+
+    -  Can still access the registration and login pages to create an account or log in.
+
+# Live Demo
+
+Check out the app live at: https://peaceful-vision-production.up.railway.app
+
+
 
 ## ✨ Features
 
