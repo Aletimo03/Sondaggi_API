@@ -12,7 +12,6 @@
     .btn, .form-control, .card, .list-group-item, .modal-content {
       border-radius: 0.5rem !important;
     }
-    #action-buttons { display: none; }
   </style>
 </head>
 <body>
@@ -36,7 +35,8 @@
       <button id="cancel-edit-btn" class="btn btn-secondary">Cancel</button>
     </div>
 
-    <div id="action-buttons" class="d-flex gap-2 mb-3">
+    <!-- Added 'd-none' here to hide buttons initially -->
+    <div id="action-buttons" class="d-flex gap-2 mb-3 d-none">
       <button id="edit-poll-btn" class="btn btn-warning btn-sm">Edit Title</button>
       <button id="delete-poll-btn" class="btn btn-danger btn-sm">Delete Poll</button>
     </div>
@@ -97,8 +97,10 @@
     const modalTitle = document.getElementById('custom-modal-title');
     const modalBody = document.getElementById('custom-modal-body');
     let modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
-    const modalCloseBtn = document.getElementById('custom-modal-close');
     const modal = new bootstrap.Modal(document.getElementById('custom-modal'));
+
+    const pollId = new URLSearchParams(window.location.search).get('id');
+    let currentUser = null, userVote = null;
 
     function showAlert(title, message) {
       modalTitle.textContent = title;
@@ -107,28 +109,44 @@
       modal.show();
     }
 
-    const pollId = new URLSearchParams(window.location.search).get('id');
-    let currentUser = null, userVote = null;
-
     if (isAuthenticated()) {
       loginLink.style.display = 'none';
       logoutLink.style.display = 'inline-block';
     }
-    logoutLink.onclick = () => { logout(); window.location.href='login.html'; };
+
+    logoutLink.onclick = () => {
+      logout();
+      window.location.href = 'login.html';
+    };
 
     async function loadPoll() {
       try {
+        console.log('Loading poll...');
         const poll = await api.get(`/polls/${pollId}/`);
-        currentUser = isAuthenticated() ? await getUser() : null;
-        userVote = poll.user_vote;
-
         pollTitle.textContent = poll.title;
-        pollInfo.textContent =
-          `Created by ${poll.created_by} on ${new Date(poll.created_at).toLocaleDateString()}`;
+        pollInfo.textContent = `Created by ${poll.created_by} on ${new Date(poll.created_at).toLocaleDateString()}`;
+
+        try {
+          currentUser = isAuthenticated() ? await getUser() : null;
+        } catch {
+          currentUser = null;
+        }
 
         const isOwner = currentUser?.username === poll.created_by;
-        const isSuper = currentUser?.is_superuser;
-        actionButtons.style.display = (isOwner||isSuper)?'flex':'none';
+        const isSuper = currentUser?.is_superuser === true;
+
+        console.log('User info:', { currentUser, isOwner, isSuper });
+
+        // Toggle visibility by adding/removing d-none class (Bootstrap)
+        if (isOwner || isSuper) {
+          console.log('Showing action buttons');
+          actionButtons.classList.remove('d-none');
+        } else {
+          console.log('Hiding action buttons');
+          actionButtons.classList.add('d-none');
+        }
+
+        userVote = poll.user_vote;
 
         choicesContainer.innerHTML = '';
         resultsList.innerHTML = '';
@@ -136,19 +154,22 @@
 
         if (isAuthenticated()) {
           voteForm.style.display = 'block';
-          voteForm.choice?.forEach?.(c=>{}); // ensure form reset
           poll.choices.forEach(c => {
             const div = document.createElement('div');
             div.className = 'form-check';
             const input = document.createElement('input');
-            input.type = 'radio'; input.name = 'choice'; input.value = c.id;
-            input.id = `choice-${c.id}`; input.className = 'form-check-input';
-            if (userVote?.choice_id===c.id) input.checked=true;
-            if (userVote) input.disabled=true;
+            input.type = 'radio';
+            input.name = 'choice';
+            input.value = c.id;
+            input.id = `choice-${c.id}`;
+            input.className = 'form-check-input';
+            if (userVote?.choice_id === c.id) input.checked = true;
+            if (userVote) input.disabled = true;
             const label = document.createElement('label');
-            label.htmlFor = input.id; label.className = 'form-check-label';
+            label.htmlFor = input.id;
+            label.className = 'form-check-label';
             label.textContent = c.text;
-            div.append(input,label);
+            div.append(input, label);
             choicesContainer.append(div);
           });
         } else {
@@ -160,34 +181,33 @@
           li.className = 'list-group-item d-flex justify-content-between';
           li.textContent = c.text;
           const badge = document.createElement('span');
-          badge.className='badge bg-primary rounded-pill';
-          badge.textContent=`${c.vote_count} (${c.vote_percentage}%)`;
+          badge.className = 'badge bg-primary rounded-pill';
+          badge.textContent = `${c.vote_count} (${c.vote_percentage}%)`;
           li.append(badge);
           resultsList.append(li);
         });
-      } catch(e) {
+      } catch (e) {
         console.error(e);
-        pollTitle.textContent='Failed to load poll.';
-        voteForm.style.display='none';
-        resultsSection.style.display='none';
-        actionButtons.style.display='none';
+        pollTitle.textContent = 'Failed to load poll.';
+        voteForm.style.display = 'none';
+        resultsSection.style.display = 'none';
+        actionButtons.classList.add('d-none');
       }
     }
 
     voteForm.addEventListener('submit', async e => {
       e.preventDefault();
-      voteError.style.display='none';
-      if (!isAuthenticated()) { showAlert('Unauthorized','Login to vote'); return; }
-      if (userVote) { showAlert('Already Voted','You have already voted'); return; }
+      voteError.style.display = 'none';
+      if (!isAuthenticated()) return showAlert('Unauthorized', 'Login to vote');
+      if (userVote) return showAlert('Already Voted', 'You have already voted');
       const choiceId = voteForm.choice.value;
       if (!choiceId) {
-        voteError.textContent='Please select a choice.';
-        voteError.style.display='block';
+        voteError.textContent = 'Please select a choice.';
+        voteError.style.display = 'block';
         return;
       }
       try {
         await api.post(`/polls/${pollId}/choices/${choiceId}/vote/`, {});
-        // after vote, show modal then auto-close & reload
         modalTitle.textContent = 'Thank you!';
         modalBody.textContent = 'Your vote has been recorded.';
         modalConfirmBtn.style.display = 'none';
@@ -195,72 +215,75 @@
         setTimeout(() => {
           modal.hide();
           loadPoll();
-        }, 3000);
+        }, 1500);
       } catch (err) {
         console.error(err);
-        showAlert('Error','Failed to submit your vote. Please try again.');
+        showAlert('Error', 'Failed to submit your vote. Please try again.');
       }
     });
 
-    // Edit title
-    editBtn.onclick = ()=> {
-      editGroup.style.display='flex';
-      editInput.value=pollTitle.textContent;
-      pollTitle.style.display='none';
-      actionButtons.style.display='none';
+    editBtn.onclick = () => {
+      editGroup.style.display = 'flex';
+      editInput.value = pollTitle.textContent;
+      pollTitle.style.display = 'none';
+      actionButtons.classList.add('d-none');
     };
-    cancelBtn.onclick = ()=> {
-      editGroup.style.display='none';
-      pollTitle.style.display='block';
-      actionButtons.style.display='flex';
+
+    cancelBtn.onclick = () => {
+      editGroup.style.display = 'none';
+      pollTitle.style.display = 'block';
+      actionButtons.classList.remove('d-none');
     };
-    saveBtn.onclick = async ()=> {
-      const nt=editInput.value.trim();
-      if(!nt){ showAlert('Validation Error','Title cannot be empty.'); return; }
-      try{
-        await api.put(`/polls/${pollId}/`,{title:nt});
-        pollTitle.textContent=nt;
-        showAlert('Success','Poll title updated.');
-        editGroup.style.display='none';
-        pollTitle.style.display='block';
-        actionButtons.style.display='flex';
-      }catch(e){
+
+    saveBtn.onclick = async () => {
+      const nt = editInput.value.trim();
+      if (!nt) return showAlert('Validation Error', 'Title cannot be empty.');
+      try {
+        await api.put(`/polls/${pollId}/`, { title: nt });
+        pollTitle.textContent = nt;
+        showAlert('Success', 'Poll title updated.');
+        editGroup.style.display = 'none';
+        pollTitle.style.display = 'block';
+        actionButtons.classList.remove('d-none');
+      } catch (e) {
         console.error(e);
-        showAlert('Error','Failed to update poll title.');
+        showAlert('Error', 'Failed to update poll title.');
       }
     };
 
-    // Delete flow
-    deleteBtn.onclick = ()=>{
-      modalTitle.textContent='Confirm Deletion';
-      modalBody.textContent='Are you sure you want to delete this poll?';
-      modalConfirmBtn.style.display='inline-block';
-      modalConfirmBtn.disabled=false;
-      modalConfirmBtn.textContent='Confirm';
+    deleteBtn.onclick = () => {
+      modalTitle.textContent = 'Confirm Deletion';
+      modalBody.textContent = 'Are you sure you want to delete this poll?';
+      modalConfirmBtn.style.display = 'inline-block';
+      modalConfirmBtn.disabled = false;
+      modalConfirmBtn.textContent = 'Confirm';
       const newBtn = modalConfirmBtn.cloneNode(true);
       modalConfirmBtn.replaceWith(newBtn);
-      modalConfirmBtn=newBtn;
-      modalConfirmBtn.onclick = async ()=>{
-        modalConfirmBtn.disabled=true;
-        try{
+      modalConfirmBtn = newBtn;
+      modalConfirmBtn.onclick = async () => {
+        modalConfirmBtn.disabled = true;
+        try {
           await api.delete(`/polls/${pollId}/`);
-          modalBody.textContent='Poll deleted successfully.';
-          modalConfirmBtn.style.display='none';
-          setTimeout(()=>{
+          modalBody.textContent = 'Poll deleted successfully.';
+          modalConfirmBtn.style.display = 'none';
+          setTimeout(() => {
             modal.hide();
-            window.location.href='index.html';
-          },3000);
-        }catch(er){
-          console.error(er);
-          modalBody.textContent='Failed to delete poll.';
-          modalConfirmBtn.disabled=false;
+            window.location.href = 'index.html';
+          }, 1500);
+        } catch (err) {
+          console.error(err);
+          modalBody.textContent = 'Failed to delete poll.';
+          modalConfirmBtn.disabled = false;
         }
       };
       modal.show();
     };
 
-    pollId ? loadPoll() : pollTitle.textContent='Poll ID not specified';
-
+    if (pollId) {
+      loadPoll();
+    } else {
+      pollTitle.textContent = 'Poll ID not specified';
+    }
   </script>
 </body>
 </html>

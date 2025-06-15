@@ -34,19 +34,21 @@ async function getUser() {
     return null;
   }
   try {
-    // Assuming 'api' is an instance that can make authenticated requests
-    // and your backend has an endpoint like '/users/me' for current user details.
-    const userData = await api.get('/users/me/'); // Adjust the endpoint as per your API
+    const userData = await api.get('/users/me/');
     return userData;
   } catch (error) {
     console.error("Failed to fetch user details:", error);
-    // Optionally, clear tokens if the error indicates invalid/expired token
-    if (error.response && error.response.status === 401) {
+
+    // Check if error is 401 Unauthorized — depends on your api wrapper
+    // Let's check if error.status or error.response?.status exists
+    const status = error.status || (error.response && error.response.status);
+    if (status === 401) {
       clearTokens();
     }
     return null;
   }
 }
+
 
 
 export { login, logout, isAuthenticated, getUser };
