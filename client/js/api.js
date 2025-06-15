@@ -1,4 +1,7 @@
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000/api' : 'https://sondaggiapi-production.up.railway.app/api';
+const API_BASE =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000/api'
+    : 'https://sondaggiapi-production.up.railway.app/api';
 
 function getTokens() {
   return {
@@ -62,24 +65,37 @@ async function apiFetch(endpoint, options = {}, retry = true) {
 
 export async function apiJson(endpoint, options = {}) {
   const res = await apiFetch(endpoint, options);
+
   if (!res.ok) {
+    // Try to parse error JSON if any, else fallback
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Error ${res.status}`);
   }
+
+  if (res.status === 204) {
+    // No content response (e.g., successful DELETE)
+    return null;
+  }
+
   return res.json();
 }
 
 const api = {
   get: (endpoint) => apiJson(endpoint),
-  post: (endpoint, data) => apiJson(endpoint, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  put: (endpoint, data) => apiJson(endpoint, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (endpoint) => apiJson(endpoint, { method: 'DELETE' }),
+  post: (endpoint, data) =>
+    apiJson(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  put: (endpoint, data) =>
+    apiJson(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (endpoint) =>
+    apiJson(endpoint, {
+      method: 'DELETE',
+    }),
 };
 
 export { getTokens, saveTokens, clearTokens, api };

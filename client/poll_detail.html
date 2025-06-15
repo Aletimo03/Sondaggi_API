@@ -4,45 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Poll Details - PollsApp</title>
-   <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/simple-line-icons/2.5.5/fonts/Simple-Line-Icons.svg" type="image/svg+xml">
+  <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/simple-line-icons/2.5.5/fonts/Simple-Line-Icons.svg" type="image/svg+xml" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
+    body { font-family: 'Inter', sans-serif; }
     .btn, .form-control, .card, .list-group-item, .modal-content {
       border-radius: 0.5rem !important;
     }
-    #action-buttons {
-      display: none;
-    }
+    #action-buttons { display: none; }
   </style>
 </head>
 <body>
   <nav class="navbar navbar-expand navbar-light bg-light">
     <div class="container-fluid">
       <a class="navbar-brand" href="index.html">PollsApp</a>
-      <div class="collapse navbar-collapse">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
-          <li class="nav-item"><a id="login-link" class="nav-link" href="login.html">Login</a></li>
-          <li class="nav-item"><a id="logout-link" class="nav-link" href="#" style="display:none;">Logout</a></li>
-        </ul>
-      </div>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+        <li class="nav-item"><a id="login-link" class="nav-link" href="login.html">Login</a></li>
+        <li class="nav-item"><a id="logout-link" class="nav-link" href="#" style="display:none;">Logout</a></li>
+      </ul>
     </div>
   </nav>
 
-  <div class="container mt-4">
+  <main class="container mt-4">
     <h2 id="poll-title">Loading...</h2>
 
     <div id="edit-title-group" class="input-group mb-3" style="display: none;">
-      <input type="text" id="edit-title-input" class="form-control" />
+      <input id="edit-title-input" class="form-control" />
       <button id="save-title-btn" class="btn btn-success">Save</button>
       <button id="cancel-edit-btn" class="btn btn-secondary">Cancel</button>
     </div>
 
-    <div id="action-buttons" class="mb-3 gap-2">
+    <div id="action-buttons" class="d-flex gap-2 mb-3">
       <button id="edit-poll-btn" class="btn btn-warning btn-sm">Edit Title</button>
       <button id="delete-poll-btn" class="btn btn-danger btn-sm">Delete Poll</button>
     </div>
@@ -55,30 +49,30 @@
       <div id="vote-error" class="text-danger mt-2" style="display:none;"></div>
     </form>
 
-    <div id="results" style="display:none;">
+    <section id="results" style="display:none;">
       <h4>Results</h4>
       <ul id="results-list" class="list-group"></ul>
-    </div>
-  </div>
+    </section>
+  </main>
 
+  <!-- Modal -->
   <div id="custom-modal" class="modal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="custom-modal-title"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 id="custom-modal-title" class="modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body" id="custom-modal-body"></div>
-        <div class="modal-footer" id="custom-modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="custom-modal-confirm-btn" style="display:none;">Confirm</button>
+        <div id="custom-modal-body" class="modal-body"></div>
+        <div class="modal-footer">
+          <button id="custom-modal-close" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button id="custom-modal-confirm-btn" type="button" class="btn btn-primary" style="display:none;">Confirm</button>
         </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
   <script type="module">
     import { api } from './js/api.js';
     import { isAuthenticated, logout, getUser } from './js/auth.js';
@@ -90,7 +84,7 @@
     const voteForm = document.getElementById('vote-form');
     const choicesContainer = document.getElementById('choices-container');
     const voteError = document.getElementById('vote-error');
-    const results = document.getElementById('results');
+    const resultsSection = document.getElementById('results');
     const resultsList = document.getElementById('results-list');
     const editBtn = document.getElementById('edit-poll-btn');
     const deleteBtn = document.getElementById('delete-poll-btn');
@@ -99,208 +93,174 @@
     const saveBtn = document.getElementById('save-title-btn');
     const cancelBtn = document.getElementById('cancel-edit-btn');
     const actionButtons = document.getElementById('action-buttons');
-    const customModalTitle = document.getElementById('custom-modal-title');
-    const customModalBody = document.getElementById('custom-modal-body');
-    const customModalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
-    const customModal = new bootstrap.Modal(document.getElementById('custom-modal'));
+
+    const modalTitle = document.getElementById('custom-modal-title');
+    const modalBody = document.getElementById('custom-modal-body');
+    let modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
+    const modalCloseBtn = document.getElementById('custom-modal-close');
+    const modal = new bootstrap.Modal(document.getElementById('custom-modal'));
 
     function showAlert(title, message) {
-      customModalTitle.textContent = title;
-      customModalBody.textContent = message;
-      customModalConfirmBtn.style.display = 'none';
-      customModal.show();
+      modalTitle.textContent = title;
+      modalBody.textContent = message;
+      modalConfirmBtn.style.display = 'none';
+      modal.show();
     }
 
-    async function showConfirm(title, message) {
-      return new Promise(resolve => {
-        customModalTitle.textContent = title;
-        customModalBody.textContent = message;
-        customModalConfirmBtn.style.display = 'inline-block';
-        const handleClose = () => {
-          customModal.hide();
-          resolve(false);
-          customModalConfirmBtn.removeEventListener('click', handleConfirm);
-          customModalElement.removeEventListener('hidden.bs.modal', handleClose);
-        };
-        const handleConfirm = () => {
-          customModal.hide();
-          resolve(true);
-          customModalConfirmBtn.removeEventListener('click', handleConfirm);
-          customModalElement.removeEventListener('hidden.bs.modal', handleClose);
-        };
-        const customModalElement = document.getElementById('custom-modal');
-        customModalConfirmBtn.addEventListener('click', handleConfirm);
-        customModalElement.addEventListener('hidden.bs.modal', handleClose);
-        customModal.show();
-      });
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const pollId = urlParams.get('id');
-    let currentUser = null;
+    const pollId = new URLSearchParams(window.location.search).get('id');
+    let currentUser = null, userVote = null;
 
     if (isAuthenticated()) {
       loginLink.style.display = 'none';
       logoutLink.style.display = 'inline-block';
     }
-
-    logoutLink.addEventListener('click', () => {
-      logout();
-      window.location.href = 'login.html';
-    });
+    logoutLink.onclick = () => { logout(); window.location.href='login.html'; };
 
     async function loadPoll() {
       try {
         const poll = await api.get(`/polls/${pollId}/`);
         currentUser = isAuthenticated() ? await getUser() : null;
-
-        console.log("--- LOAD POLL START ---");
-        console.log("isAuthenticated():", isAuthenticated());
-        console.log("Current User:", currentUser);
-        console.log("Poll Data:", poll);
+        userVote = poll.user_vote;
 
         pollTitle.textContent = poll.title;
-        pollInfo.textContent = `Created by ${poll.created_by} on ${new Date(poll.created_at).toLocaleDateString()}`;
+        pollInfo.textContent =
+          `Created by ${poll.created_by} on ${new Date(poll.created_at).toLocaleDateString()}`;
 
-        const isOwner = isAuthenticated() && currentUser && currentUser.username === poll.created_by;
-        const isSuperuser = currentUser?.is_superuser;
+        const isOwner = currentUser?.username === poll.created_by;
+        const isSuper = currentUser?.is_superuser;
+        actionButtons.style.display = (isOwner||isSuper)?'flex':'none';
 
-        console.log("Is Owner:", isOwner);
-        console.log("Is Superuser:", isSuperuser);
-
-        actionButtons.style.display = (isOwner || isSuperuser) ? 'flex' : 'none';
         choicesContainer.innerHTML = '';
         resultsList.innerHTML = '';
-        results.style.display = 'block';
+        resultsSection.style.display = 'block';
 
         if (isAuthenticated()) {
           voteForm.style.display = 'block';
-          poll.choices.forEach(choice => {
+          voteForm.choice?.forEach?.(c=>{}); // ensure form reset
+          poll.choices.forEach(c => {
             const div = document.createElement('div');
             div.className = 'form-check';
             const input = document.createElement('input');
-            input.type = 'radio';
-            input.name = 'choice';
-            input.value = choice.id;
-            input.id = `choice-${choice.id}`;
-            input.className = 'form-check-input';
+            input.type = 'radio'; input.name = 'choice'; input.value = c.id;
+            input.id = `choice-${c.id}`; input.className = 'form-check-input';
+            if (userVote?.choice_id===c.id) input.checked=true;
+            if (userVote) input.disabled=true;
             const label = document.createElement('label');
-            label.htmlFor = input.id;
-            label.className = 'form-check-label';
-            label.textContent = choice.text;
-            div.appendChild(input);
-            div.appendChild(label);
-            choicesContainer.appendChild(div);
+            label.htmlFor = input.id; label.className = 'form-check-label';
+            label.textContent = c.text;
+            div.append(input,label);
+            choicesContainer.append(div);
           });
         } else {
           voteForm.style.display = 'none';
         }
 
-        poll.choices.forEach(choice => {
+        poll.choices.forEach(c => {
           const li = document.createElement('li');
-          li.className = 'list-group-item d-flex justify-content-between align-items-center';
-          li.textContent = choice.text;
+          li.className = 'list-group-item d-flex justify-content-between';
+          li.textContent = c.text;
           const badge = document.createElement('span');
-          badge.className = 'badge bg-primary rounded-pill';
-          badge.textContent = `${choice.vote_count} (${choice.vote_percentage}%)`;
-          li.appendChild(badge);
-          resultsList.appendChild(li);
+          badge.className='badge bg-primary rounded-pill';
+          badge.textContent=`${c.vote_count} (${c.vote_percentage}%)`;
+          li.append(badge);
+          resultsList.append(li);
         });
-        console.log("--- LOAD POLL END ---");
-
-      } catch (err) {
-        console.error('Error loading poll:', err);
-        pollTitle.textContent = "Failed to load poll.";
-        voteForm.style.display = 'none';
-        results.style.display = 'none';
-        actionButtons.style.display = 'none';
+      } catch(e) {
+        console.error(e);
+        pollTitle.textContent='Failed to load poll.';
+        voteForm.style.display='none';
+        resultsSection.style.display='none';
+        actionButtons.style.display='none';
       }
     }
 
     voteForm.addEventListener('submit', async e => {
       e.preventDefault();
-      voteError.style.display = 'none';
-      const selectedChoice = voteForm.querySelector('input[name="choice"]:checked');
-      if (!selectedChoice) {
-        voteError.textContent = 'Please select a choice to vote.';
-        voteError.style.display = 'block';
+      voteError.style.display='none';
+      if (!isAuthenticated()) { showAlert('Unauthorized','Login to vote'); return; }
+      if (userVote) { showAlert('Already Voted','You have already voted'); return; }
+      const choiceId = voteForm.choice.value;
+      if (!choiceId) {
+        voteError.textContent='Please select a choice.';
+        voteError.style.display='block';
         return;
       }
       try {
-        await api.post(`/polls/${pollId}/choices/${selectedChoice.value}/vote/`, {});
-        await loadPoll();
+        await api.post(`/polls/${pollId}/choices/${choiceId}/vote/`, {});
+        // after vote, show modal then auto-close & reload
+        modalTitle.textContent = 'Thank you!';
+        modalBody.textContent = 'Your vote has been recorded.';
+        modalConfirmBtn.style.display = 'none';
+        modal.show();
+        setTimeout(() => {
+          modal.hide();
+          loadPoll();
+        }, 3000);
       } catch (err) {
-        console.error('Vote submission error:', err);
-        voteError.style.display = 'block';
-
-        let errorMessage = 'Failed to submit vote.';
-        if (err.response && err.response.status === 400) {
-          errorMessage = err.response.data?.detail || 'You have already voted.';
-        } else if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          errorMessage = 'You are not authorized to vote.';
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-        voteError.textContent = errorMessage;
+        console.error(err);
+        showAlert('Error','Failed to submit your vote. Please try again.');
       }
     });
 
-    editBtn.addEventListener('click', () => {
-      editInput.value = pollTitle.textContent;
-      pollTitle.style.display = 'none';
-      editGroup.style.display = 'flex';
-      editBtn.style.display = 'none';
-    });
-
-    cancelBtn.addEventListener('click', () => {
-      editGroup.style.display = 'none';
-      pollTitle.style.display = 'block';
-      editBtn.style.display = 'inline-block';
-    });
-
-    saveBtn.addEventListener('click', async () => {
-      const newTitle = editInput.value.trim();
-      if (!newTitle) {
-        showAlert('Validation Error', 'Title cannot be empty.');
-        return;
+    // Edit title
+    editBtn.onclick = ()=> {
+      editGroup.style.display='flex';
+      editInput.value=pollTitle.textContent;
+      pollTitle.style.display='none';
+      actionButtons.style.display='none';
+    };
+    cancelBtn.onclick = ()=> {
+      editGroup.style.display='none';
+      pollTitle.style.display='block';
+      actionButtons.style.display='flex';
+    };
+    saveBtn.onclick = async ()=> {
+      const nt=editInput.value.trim();
+      if(!nt){ showAlert('Validation Error','Title cannot be empty.'); return; }
+      try{
+        await api.put(`/polls/${pollId}/`,{title:nt});
+        pollTitle.textContent=nt;
+        showAlert('Success','Poll title updated.');
+        editGroup.style.display='none';
+        pollTitle.style.display='block';
+        actionButtons.style.display='flex';
+      }catch(e){
+        console.error(e);
+        showAlert('Error','Failed to update poll title.');
       }
-      try {
-        await api.put(`/polls/${pollId}/`, { title: newTitle });
-        pollTitle.textContent = newTitle;
-        editGroup.style.display = 'none';
-        pollTitle.style.display = 'block';
-        editBtn.style.display = 'inline-block';
-        showAlert('Success', 'Poll title updated successfully.');
-      } catch (err) {
-        console.error('Failed to update poll title:', err);
-        showAlert('Update Failed', 'Failed to update poll title. Please try again.');
-      }
-    });
+    };
 
-    deleteBtn.addEventListener('click', async () => {
-      const confirmed = await showConfirm("Confirm Deletion", "Are you sure?");
-      if (confirmed) {
-        try {
+    // Delete flow
+    deleteBtn.onclick = ()=>{
+      modalTitle.textContent='Confirm Deletion';
+      modalBody.textContent='Are you sure you want to delete this poll?';
+      modalConfirmBtn.style.display='inline-block';
+      modalConfirmBtn.disabled=false;
+      modalConfirmBtn.textContent='Confirm';
+      const newBtn = modalConfirmBtn.cloneNode(true);
+      modalConfirmBtn.replaceWith(newBtn);
+      modalConfirmBtn=newBtn;
+      modalConfirmBtn.onclick = async ()=>{
+        modalConfirmBtn.disabled=true;
+        try{
           await api.delete(`/polls/${pollId}/`);
-          showAlert('Success', 'Poll deleted.');
-          setTimeout(() => window.location.href = "index.html", 1500);
-        } catch (err) {
-          console.error('Failed to delete poll:', err);
-          showAlert('Deletion Failed', 'Failed to delete.');
+          modalBody.textContent='Poll deleted successfully.';
+          modalConfirmBtn.style.display='none';
+          setTimeout(()=>{
+            modal.hide();
+            window.location.href='index.html';
+          },3000);
+        }catch(er){
+          console.error(er);
+          modalBody.textContent='Failed to delete poll.';
+          modalConfirmBtn.disabled=false;
         }
-      }
-    });
+      };
+      modal.show();
+    };
 
-    if (pollId) {
-      loadPoll();
-    } else {
-      pollTitle.textContent = "Poll ID not provided.";
-      actionButtons.style.display = 'none';
-      voteForm.style.display = 'none';
-      results.style.display = 'none';
-    }
+    pollId ? loadPoll() : pollTitle.textContent='Poll ID not specified';
+
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
