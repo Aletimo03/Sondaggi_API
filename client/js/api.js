@@ -67,18 +67,24 @@ export async function apiJson(endpoint, options = {}) {
   const res = await apiFetch(endpoint, options);
 
   if (!res.ok) {
-    // Try to parse error JSON if any, else fallback
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Error ${res.status}`);
   }
 
   if (res.status === 204) {
-    // No content response (e.g., successful DELETE)
+    // No content response (common after DELETE)
     return null;
   }
 
-  return res.json();
+  const contentType = res.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return res.json();
+  }
+
+  // Fallback: not JSON, return raw text or empty
+  return res.text();
 }
+
 
 const api = {
   get: (endpoint) => apiJson(endpoint),
